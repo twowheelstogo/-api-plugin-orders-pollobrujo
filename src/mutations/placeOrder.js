@@ -7,6 +7,7 @@ import getAnonymousAccessToken from "@reactioncommerce/api-utils/getAnonymousAcc
 import buildOrderFulfillmentGroupFromInput from "../util/buildOrderFulfillmentGroupFromInput.js";
 import verifyPaymentsMatchOrderTotal from "../util/verifyPaymentsMatchOrderTotal.js";
 import { Order as OrderSchema, orderInputSchema, Payment as PaymentSchema, paymentInputSchema } from "../simpleSchemas.js";
+import getOrderIdSequence from "../util/getOrderIdSequence.js";
 
 const inputSchema = new SimpleSchema({
   "order": orderInputSchema,
@@ -39,7 +40,8 @@ async function createPayments({
   orderTotal,
   paymentsInput,
   shippingAddress,
-  shop
+  shop,
+  orderIdSequence
 }) {
   // Determining which payment methods are enabled for the shop
   const availablePaymentMethods = shop.availablePaymentMethods || [];
@@ -68,6 +70,7 @@ async function createPayments({
 
     // Authorize this payment
     const payment = await paymentMethodConfig.functions.createAuthorizedPayment(context, {
+      orderIdSequence,
       accountId, // optional
       amount,
       billingAddress: paymentInput.billingAddress || billingAddress,
@@ -193,6 +196,8 @@ export default async function placeOrder(context, input) {
     return group;
   }));
 
+  const orderIdSequence = await getOrderIdSequence(context);
+
   const payments = await createPayments({
     accountId,
     billingAddress,
@@ -202,7 +207,8 @@ export default async function placeOrder(context, input) {
     orderTotal,
     paymentsInput,
     shippingAddress: shippingAddressForPayments,
-    shop
+    shop,
+    orderIdSequence
   });
 
   // Create anonymousAccessToken if no account ID
@@ -212,6 +218,7 @@ export default async function placeOrder(context, input) {
 
   const order = {
     _id: orderId,
+    orderId: orderIdSequence,
     accountId,
     billingAddress,
     cartId,

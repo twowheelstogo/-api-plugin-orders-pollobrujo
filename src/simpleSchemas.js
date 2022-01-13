@@ -1018,6 +1018,10 @@ export const Order = new SimpleSchema({
     type: String,
     optional: true
   },
+  "orderId": {
+    type: Number,
+    optional: true
+  },
   "accountId": {
     type: String,
     optional: true
